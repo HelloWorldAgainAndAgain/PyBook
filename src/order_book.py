@@ -2,10 +2,11 @@ import sys
 
 
 class Order:
-  def __init__(self, id, timestamp, price, shares, next_order, prev_order):
+  def __init__(self, id, timestamp, price, buy_or_sell, shares, next_order, prev_order):
     self.id = id
     self.timestamp = timestamp
     self.price = price
+    self.buy_or_sell = buy_or_sell
     self.shares = shares
     self.next_order = next_order
     self.prev_order = prev_order
