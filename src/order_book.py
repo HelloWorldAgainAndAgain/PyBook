@@ -106,6 +106,36 @@ class Limit:
     self.total_volume += order.get_shares()
 
 
+class Book:
+  buy_tree = None
+  sell_tree = None
+  lowest_sell = None
+  highest_buy = None
+
+  def get_buy_tree(self):
+    return self.buy_tree
+
+  def set_buy_tree(self, buy):
+    self.buy_tree = buy
+
+  def get_sell_tree(self):
+    return self.sell_tree
+
+  def set_sell_tree(self, sell):
+    self.sell_tree = sell
+
+  def get_lowest_sell(self):
+    return self.lowest_sell
+
+  def set_lowest_sell(self, sell):
+    self.lowest_sell = sell
+
+  def get_highest_buy(self):
+    return self.highest_buy
+
+  def set_highest_sell(self, buy):
+    self.highest_buy = buy
+
 def main():
   for line in sys.stdin:
     print(line.strip())
