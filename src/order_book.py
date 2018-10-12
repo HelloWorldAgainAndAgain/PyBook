@@ -1,19 +1,23 @@
 import sys
 
+
 class Order:
-  def __init__(self, id, timestamp, shares, next_order, prev_order, parent_limit):
+  def __init__(self, id, timestamp, shares, next_order, prev_order):
     self.id = id
     self.timestamp = timestamp
     self.shares = shares
     self.next_order = next_order
     self.prev_order = prev_order
-    self.parent_limit = parent_limit
+    self.parent_limit = None
 
   def set_next(self, next):
     self.next_order = next
 
   def set_prev(self, prev):
     self.prev_order = prev
+
+  def get_shares(self):
+    return self.shares
 
   def reduce(self, shares_reduction):
     if shares_reduction >= self.shares:
@@ -35,6 +39,71 @@ class Order:
       else:
         self.parent_limit.set_tail(None)
     del self
+
+
+class Limit:
+  def __init__(self, limit_price, parent, left_child, right_child):
+    self.limit_price = limit_price
+    self.size = 0
+    self.total_volume = 0
+    self.parent = parent
+    self.left_child = left_child
+    self.right_child = right_child
+    self.head_order = None
+    self.tail_order = None
+
+  def get_head(self):
+    return self.head_order
+
+  def set_head(self, head):
+    self.head_order = head
+
+  def get_tail(self):
+    return self.tail_order
+
+  def set_tail(self, tail):
+    self.tail_order = tail
+
+  def get_size(self):
+    return self.size
+
+  def set_size(self, new_size):
+    self.size = new_size
+
+  def get_volume(self):
+    return self.total_volume
+
+  def set_volume(self, new_volume):
+    self.total_volume = new_volume
+
+  def get_right(self):
+    return self.right_child
+
+  def set_right(self, new_right):
+    self.right_child = new_right 
+
+  def get_left(self):
+    return self.left_child
+
+  def set_left(self, new_left):
+    self.left_child = new_left
+
+  def get_parent(self):
+    return self.parent
+
+  def set_parent(self, new_parent):
+    self.parent = new_parent
+
+  def add(self, order):
+    if not head_order:
+      self.head_order = order
+      self.tail_order = order
+    else:
+      self.tail_order.set_next(order)
+      order.set_prev(self.tail_order)
+      self.tail_order = order
+    self.size += 1
+    self.total_volume += order.get_shares()
 
 
 def main():
