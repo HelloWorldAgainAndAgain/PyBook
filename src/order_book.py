@@ -1,15 +1,16 @@
 import sys
 
+order_map = {}
 
 class Order:
-  def __init__(self, id, timestamp, price, buy_or_sell, shares, next_order, prev_order):
+  def __init__(self, id, timestamp, shares, price, buy_or_sell):
     self.id = id
     self.timestamp = timestamp
     self.price = price
     self.buy_or_sell = buy_or_sell
     self.shares = shares
-    self.next_order = next_order
-    self.prev_order = prev_order
+    self.next_order = None
+    self.prev_order = None
     self.parent_limit = None
 
   def set_next(self, next):
@@ -48,6 +49,7 @@ class Limit:
     self.limit_price = limit_price
     self.size = 0
     self.total_volume = 0
+    self.height = 0
     self.parent = parent
     self.left_child = left_child
     self.right_child = right_child
@@ -139,8 +141,15 @@ class Book:
     self.highest_buy = buy
 
 def main():
+  global order_map
+  book = Book()
   for line in sys.stdin:
-    print(line.strip())
+    #line = line.strip()
+    fields = line.split()
+    if fields[1] == 'A':
+      order = Order(fields[2], fields[0], fields[5], fields[4], fields[3])
+      print(order.get_shares())
+    #print(line.strip())
 
 if __name__ == '__main__':
   main()
