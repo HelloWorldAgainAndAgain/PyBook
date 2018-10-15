@@ -81,6 +81,9 @@ Execute - O(1)
 GetVolumeAtLimit - O(1)
 GetBestBid/Offer - O(1)
 where M is the number of price Limits (<< N the number of order)
+
+https://rosettacode.org/wiki/AVL_tree#Python 
+  balancing
 """
 import sys
 
@@ -152,20 +155,26 @@ class LimitTree:
       self.root = limit
     else:
       ptr = self.root
-      parent = None
-      while ptr is not None:
+      while True:
         if limit.price < ptr.price:
-          parent = ptr
-          ptr = ptr.left_child
+          if ptr.left_child is None:
+            ptr.left_child = limit
+            ptr.left_child.parent = ptr
+            break
+          else:
+            ptr = ptr.left_child
+            continue
         else:
-          parent = ptr
-          ptr = ptr.right_child
-      ptr = limit
-      ptr.parent = parent
-      if self.is_left_child(ptr, parent):
-        parent.left_child = ptr
-      else:
-        parent.right_child = ptr
+          if ptr.right_child is None:
+            ptr.right_child = limit
+            ptr.right_child.parent = ptr
+            break
+          else:
+            ptr = ptr.right_child
+            continue
+      self.rebalance(limit)
+
+  
 
 
 
