@@ -1,4 +1,30 @@
 """
+
+MIT License
+
+Copyright (c) 2018 Arvin Bhathal
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+--------------------------------------------------------------------------------
+
+
 Limit Order Book
 
 3 main operations:
@@ -94,14 +120,14 @@ class Order:
 
 
 class Limit:
-  def __init__(self, limit_price, parent, left_child, right_child):
-    self.limit_price = limit_price
+  def __init__(self, price):
+    self.price = price
     self.size = 0
     self.total_volume = 0
-    self.height = 0
-    self.parent = parent
-    self.left_child = left_child
-    self.right_child = right_child
+    self.height = 1
+    self.parent = None
+    self.left_child = None
+    self.right_child = None
     self.head_order = None
     self.tail_order = None
 
@@ -117,9 +143,35 @@ class Limit:
     self.total_volume += order.get_shares()
 
 
+class LimitTree:
+  def __init__(self):
+    self.root = None
+
+  def insert(self, limit):
+    if not self.root:
+      self.root = limit
+    else:
+      ptr = self.root
+      parent = None
+      while ptr is not None:
+        if limit.price < ptr.price:
+          parent = ptr
+          ptr = ptr.left_child
+        else:
+          parent = ptr
+          ptr = ptr.right_child
+      ptr = limit
+      ptr.parent = parent
+      if self.is_left_child(ptr, parent):
+        parent.left_child = ptr
+      else:
+        parent.right_child = ptr
+
+
+
 class Book:
-  buy_tree = None
-  sell_tree = None
+  buy_tree = LimitTree()
+  sell_tree = LimitTree()
   lowest_sell = None
   highest_buy = None
 
@@ -127,8 +179,6 @@ class Book:
     if order.is_bid:
       if self.lowest_sell <= order.get_price():
         while True:
-
-
 
     else:
       book = sell_tree
