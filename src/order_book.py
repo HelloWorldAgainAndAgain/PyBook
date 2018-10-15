@@ -1,26 +1,75 @@
+"""
+Limit Order Book
+
+3 main operations:
+  add
+  cancel/reduce
+  execute
+
+answer following questions:
+  what are the best bid and ask
+  how much volume is there between prices A and B
+  what is order X's current position in the book
+
+most activity is add and cancel, execute much less
+
+add places order at the end of list at a particular limit price
+cancel removes order from anywhere in the book
+execution removes an order from the inside of the book (oldest buy order at the highest price and oldest sell order at the lowest price)
+
+Order
+  int idNumber;
+  bool buyOrSell;
+  int shares;
+  int limit;
+  int entryTime;
+  int eventTime;
+  Order *nextOrder;
+  Order *prevOrder;
+  Limit *parentLimit;
+
+Limit  // representing a single limit price
+  int limitPrice;
+  int size;
+  int totalVolume;
+  Limit *parent;
+  Limit *leftChild;
+  Limit *rightChild;
+  Order *headOrder;
+  Order *tailOrder;
+
+Book
+  Limit *buyTree;
+  Limit *sellTree;
+  Limit *lowestSell;
+  Limit *highestBuy;
+
+balanced binary tree of Limit objects sorted by limitPrice -> doubly linked list of Order objects
+buy and sell Limits in separate trees, so inside of corresponds to end of buy tree and beginning of sell tree
+each Order is in a map keyed off idNumber
+each Limit is in a map keyed off limitPrice
+
+Add - O(logM) for the first order at a limit, O(1) for all others
+Cancel - O(1)
+Execute - O(1)
+GetVolumeAtLimit - O(1)
+GetBestBid/Offer - O(1)
+where M is the number of price Limits (<< N the number of order)
+"""
 import sys
 
 order_map = {}
 
 class Order:
-  def __init__(self, id, timestamp, shares, price, buy_or_sell):
+  def __init__(self, id, timestamp, shares, price, is_bid):
     self.id = id
     self.timestamp = timestamp
     self.price = price
-    self.buy_or_sell = buy_or_sell
+    self.is_bid = is_bid
     self.shares = shares
     self.next_order = None
     self.prev_order = None
     self.parent_limit = None
-
-  def set_next(self, next):
-    self.next_order = next
-
-  def set_prev(self, prev):
-    self.prev_order = prev
-
-  def get_shares(self):
-    return self.shares
 
   def reduce(self, shares_reduction):
     if shares_reduction >= self.shares:
@@ -56,48 +105,6 @@ class Limit:
     self.head_order = None
     self.tail_order = None
 
-  def get_head(self):
-    return self.head_order
-
-  def set_head(self, head):
-    self.head_order = head
-
-  def get_tail(self):
-    return self.tail_order
-
-  def set_tail(self, tail):
-    self.tail_order = tail
-
-  def get_size(self):
-    return self.size
-
-  def set_size(self, new_size):
-    self.size = new_size
-
-  def get_volume(self):
-    return self.total_volume
-
-  def set_volume(self, new_volume):
-    self.total_volume = new_volume
-
-  def get_right(self):
-    return self.right_child
-
-  def set_right(self, new_right):
-    self.right_child = new_right 
-
-  def get_left(self):
-    return self.left_child
-
-  def set_left(self, new_left):
-    self.left_child = new_left
-
-  def get_parent(self):
-    return self.parent
-
-  def set_parent(self, new_parent):
-    self.parent = new_parent
-
   def add(self, order):
     if not head_order:
       self.head_order = order
@@ -116,29 +123,17 @@ class Book:
   lowest_sell = None
   highest_buy = None
 
-  def get_buy_tree(self):
-    return self.buy_tree
+  def add_order(self, order):
+    if order.is_bid:
+      if self.lowest_sell <= order.get_price():
+        while True:
 
-  def set_buy_tree(self, buy):
-    self.buy_tree = buy
 
-  def get_sell_tree(self):
-    return self.sell_tree
 
-  def set_sell_tree(self, sell):
-    self.sell_tree = sell
-
-  def get_lowest_sell(self):
-    return self.lowest_sell
-
-  def set_lowest_sell(self, sell):
-    self.lowest_sell = sell
-
-  def get_highest_buy(self):
-    return self.highest_buy
-
-  def set_highest_sell(self, buy):
-    self.highest_buy = buy
+    else:
+      book = sell_tree
+    global order_map
+    if order.get_price
 
 def main():
   global order_map
@@ -148,7 +143,8 @@ def main():
     fields = line.split()
     if fields[1] == 'A':
       order = Order(fields[2], fields[0], fields[5], fields[4], fields[3])
-      print(order.get_shares())
+      book.add_order(order)
+      #print(order.get_shares())
     #print(line.strip())
 
 if __name__ == '__main__':
