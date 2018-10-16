@@ -89,11 +89,12 @@ http://www.mathcs.emory.edu/~cheung/Courses/323/Syllabus/Trees/AVL-insert.html#t
   balancing
 """
 import sys
-from timeit import default_timer as timer
+
+order_map = {}
 
 class Order:
-  def __init__(self, uid, timestamp, shares, price, is_bid):
-    self.uid = uid
+  def __init__(self, id, timestamp, shares, price, is_bid):
+    self.id = id
     self.timestamp = timestamp
     self.price = price
     self.is_bid = is_bid
@@ -110,17 +111,17 @@ class Order:
 
   def cancel(self):
     if self.prev_order:
-      self.prev_order.next_order = self.next_order
+      self.prev_order.set_next(self.next_order)
       if self.next_order:
-        self.next_order.prev_order = self.prev_order
+        self.next_order.set_prev(self.prev_order)
       else:
-        self.parent_limit.tail_order = self.prev_order
+        self.parent_limit.set_tail(self.prev_order)
     else:
-      self.parent_limit.head_order = self.next_order
+      self.parent_limit.set_head(self.next_order)
       if self.next_order:
-        self.next_order.prev_order = None
+        self.next_order.set_prev(None)
       else:
-        self.parent_limit.tail_order = None
+        self.parent_limit.set_tail(None)
     del self
 
 
@@ -137,15 +138,15 @@ class Limit:
     self.tail_order = None
 
   def add(self, order):
-    if not self.head_order:
+    if not head_order:
       self.head_order = order
       self.tail_order = order
     else:
-      self.tail_order.next_order = order
-      order.prev_order = self.tail_order
+      self.tail_order.set_next(order)
+      order.set_prev(self.tail_order)
       self.tail_order = order
     self.size += 1
-    self.total_volume += order.shares
+    self.total_volume += order.get_shares()
 
 
 class LimitTree:
@@ -187,13 +188,12 @@ class LimitTree:
           break
       if x is not None:
         self.rebalance(x, y, z)
+      #self.rebalance(ptr)
 
   def rebalance(self, x, y, z):
-    """
-    http://www.mathcs.emory.edu/~cheung/Courses/323/Syllabus/Trees/AVL-insert.html
-    """
     z_is_left_child = z is y.left_child
     y_is_left_child = y is x.left_child
+
     if z_is_left_child and y_is_left_child:
       a = z
       b = y
@@ -205,7 +205,7 @@ class LimitTree:
     elif not z_is_left_child and y_is_left_child:
       a = y
       b = z
-      c = x
+      c = z
       t0 = y.left_child
       t1 = z.left_child
       t2 = z.right_child
@@ -256,6 +256,7 @@ class LimitTree:
     c.right_child = t3
     if t3 is not None:
       t3.parent = c
+
     self.update_height(a)
     self.update_height(c)
 
@@ -283,52 +284,44 @@ class Book:
   sell_tree = LimitTree()
   lowest_sell = None
   highest_buy = None
-  buy_map = {}
-  sell_map = {}
-  buy_levels = {}
-  sell_levels = {}
 
- # def reduce_order(self, order_id, amount):
-    # if order_id.price in buy_map:
-    #   buy_map[order_id]
+  # def add_order(self, order):
+  #   if order.is_bid:
+  #     if self.lowest_sell <= order.get_price():
+  #       while True:
 
-  def add_order(self, order):
-    if order.is_bid:
-      if order.price in self.buy_levels:
-        self.buy_levels[order.price].add(order)
-        self.buy_map[order.uid] = order
-      else:
-        limit = Limit(order.price)
-        limit.add(order)
-        self.buy_map[order.uid] = order
-        self.buy_tree.insert(limit)
-        self.buy_levels[order.price] = limit
-    else:
-      if order.price in self.sell_levels:
-        self.sell_levels[order.price].add(order)
-      else:
-        limit = Limit(order.price)
-        limit.add(order)
-        self.sell_map[order.uid] = order
-        self.sell_tree.insert(limit)
-        self.sell_levels[order.price] = limit
-
+  #   else:
+  #     book = sell_tree
+  #   global order_map
+  #   if order.get_price
 
 def main():
-  start = timer()
-  book = Book()
-  #sys.stdin = open('/dev/tty'); import pdb; pdb.set_trace()
-  for line in sys.stdin:
-    fields = line.split()
-    #print(fields)
-    if fields[1] == 'A':
-      order = Order(fields[2], int(fields[0]), int(fields[5]), float(fields[4]), True if fields[3] == 'B' else False)
-      #uid, timestamp, shares, price, is_bid):
-      book.add_order(order)
-  print(book.sell_tree.root.height)
-  print(book.buy_tree.root.height)
-  end = timer()
-  print(end-start)
+  a = Limit(10)
+  b = Limit(20)
+  c = Limit(0)
+  d = LimitTree()
+  d.insert(a)
+  d.insert(b)
+  d.insert(c)
+  d.insert(Limit(40))
+  d.insert(Limit(50))
+  d.insert(Limit(60))
+  d.insert(Limit(70))
+  d.insert(Limit(80))
+  print(abs(LimitTree.height(d, d.root)))
+  print(d.root.left_child.price)
+  print(d.root.right_child.price)
+  #print(d.root.right_child.right_child.right_child.right_child.price)
+  # global order_map
+  # book = Book()
+  # for line in sys.stdin:
+  #   #line = line.strip()
+  #   fields = line.split()
+  #   if fields[1] == 'A':
+  #     order = Order(fields[2], fields[0], fields[5], fields[4], fields[3])
+  #     book.add_order(order)
+  #     #print(order.get_shares())
+    #print(line.strip())
 
 if __name__ == '__main__':
   main()
