@@ -84,6 +84,9 @@ where M is the number of price Limits (<< N the number of order)
 
 https://rosettacode.org/wiki/AVL_tree#Python 
   balancing
+
+http://www.mathcs.emory.edu/~cheung/Courses/323/Syllabus/Trees/AVL-insert.html#tri-node
+  balancing
 """
 import sys
 
@@ -172,10 +175,25 @@ class LimitTree:
           else:
             ptr = ptr.right_child
             continue
-      self.rebalance(limit)
+      self.update_height(ptr)
+      self.rebalance(ptr)
 
-  
+  def update_height(self, node):
+    """
+    http://www.mathcs.emory.edu/~cheung/Courses/323/Syllabus/Trees/AVL-insert.html#tri-node
+    """
+    while node is not None:
+      node.height = 1 + max(self.height(node.left_child), self.height(node.right_child))
+      node = node.parent
 
+  def height(self, node):
+    """
+    https://stackoverflow.com/questions/575772/the-best-way-to-calculate-the-height-in-a-binary-search-tree-balancing-an-avl
+    """
+    if node is None:
+      return 0
+    else:
+      return node.height
 
 
 class Book:
