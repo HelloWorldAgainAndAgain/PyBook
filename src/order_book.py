@@ -104,6 +104,7 @@ class Order:
 
   def reduce(self, shares_reduction):
     if shares_reduction >= self.shares:
+      self.shares = 0
       self.cancel()
     else:
       self.shares -= shares_reduction
@@ -121,8 +122,6 @@ class Order:
         self.next_order.prev_order = None
       else:
         self.parent_limit.tail_order = None
-    del self
-
 
 class Limit:
   def __init__(self, price):
@@ -288,27 +287,38 @@ class Book:
   buy_levels = {}
   sell_levels = {}
 
- # def reduce_order(self, order_id, amount):
-    # if order_id.price in buy_map:
-    #   buy_map[order_id]
+  def reduce_order(self, order_id, amount):
+    if order_id in self.buy_map:
+      self.buy_map[order_id].reduce(amount)
+      if self.buy_map[order_id].shares == 0:
+        del self.buy_map[order_id]
+    elif order_id in self.sell_map:
+      self.sell_map[order_id].reduce(amount)
+      if self.sell_map[order_id].shares == 0:
+        del self.sell_map[order_id]
 
   def add_order(self, order):
     if order.is_bid:
       if order.price in self.buy_levels:
         self.buy_levels[order.price].add(order)
         self.buy_map[order.uid] = order
+        order.parent_limit = self.buy_levels[order.price]
       else:
         limit = Limit(order.price)
         limit.add(order)
+        order.parent_limit = limit
         self.buy_map[order.uid] = order
         self.buy_tree.insert(limit)
         self.buy_levels[order.price] = limit
     else:
       if order.price in self.sell_levels:
         self.sell_levels[order.price].add(order)
+        self.sell_map[order.uid] = order
+        order.parent_limit = self.sell_levels[order.price]
       else:
         limit = Limit(order.price)
         limit.add(order)
+        order.parent_limit = limit
         self.sell_map[order.uid] = order
         self.sell_tree.insert(limit)
         self.sell_levels[order.price] = limit
@@ -325,6 +335,8 @@ def main():
       order = Order(fields[2], int(fields[0]), int(fields[5]), float(fields[4]), True if fields[3] == 'B' else False)
       #uid, timestamp, shares, price, is_bid):
       book.add_order(order)
+    elif fields[1] == 'R':
+      book.reduce_order(fields[2], int(fields[3]))
   print(book.sell_tree.root.height)
   print(book.buy_tree.root.height)
   end = timer()
