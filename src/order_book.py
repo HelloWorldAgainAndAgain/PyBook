@@ -163,6 +163,7 @@ class LimitTree:
           if ptr.left_child is None:
             ptr.left_child = limit
             ptr.left_child.parent = ptr
+            new = ptr.left_child
             break
           else:
             ptr = ptr.left_child
@@ -171,12 +172,94 @@ class LimitTree:
           if ptr.right_child is None:
             ptr.right_child = limit
             ptr.right_child.parent = ptr
+            new = ptr.right_child
             break
           else:
             ptr = ptr.right_child
             continue
-      self.update_height(ptr)
-      self.rebalance(ptr)
+      self.update_height(new) #update heights of nodes up the path to the root
+      x = y = z = new
+      while x is not None:
+        if abs(self.height(x.left_child) - self.height(x.right_child)) <= 1:
+          z = y
+          y = x
+          x = x.parent
+        else:
+          break
+      if x is not None:
+        self.rebalance(x, y, z)
+      #self.rebalance(ptr)
+
+  def rebalance(self, x, y, z):
+    z_is_left_child = z is y.left_child
+    y_is_left_child = y is x.left_child
+
+    if z_is_left_child and y_is_left_child:
+      a = z
+      b = y
+      c = x
+      t0 = z.left_child
+      t1 = z.right_child
+      t2 = y.right_child
+      t3 = x.right_child
+    elif not z_is_left_child and y_is_left_child:
+      a = y
+      b = z
+      c = z
+      t0 = y.left_child
+      t1 = z.left_child
+      t2 = z.right_child
+      t3 = x.right_child
+    elif z_is_left_child and not y_is_left_child:
+      a = x
+      b = z
+      c = y
+      t0 = x.left_child
+      t1 = z.left_child
+      t2 = z.right_child
+      t3 = y.right_child
+    else:
+      a = x
+      b = y
+      c = z
+      t0 = x.left_child
+      t1 = y.left_child
+      t2 = z.left_child
+      t3 = z.right_child
+
+    if x is self.root:
+      self.root = b
+      self.root.parent = None
+    else:
+      x_parent = x.parent
+      if x is x_parent.left_child:
+        b.parent = x_parent
+        x_parent.left_child = b
+      else:
+        b.parent = x_parent
+        x_parent.right_child = b
+    b.left_child = a
+    a.parent = b
+    b.right_child = c
+    c.parent = b
+
+    a.left_child = t0
+    if t0 is not None:
+      t0.parent = a
+    a.right_child = t1
+    if t1 is not None:
+      t1.parent = a
+
+    c.left_child = t2
+    if t2 is not None:
+      t2.parent = c
+    c.right_child = t3
+    if t3 is not None:
+      t3.parent = c
+
+    self.update_height(a)
+    self.update_height(c)
+
 
   def update_height(self, node):
     """
@@ -202,26 +285,42 @@ class Book:
   lowest_sell = None
   highest_buy = None
 
-  def add_order(self, order):
-    if order.is_bid:
-      if self.lowest_sell <= order.get_price():
-        while True:
+  # def add_order(self, order):
+  #   if order.is_bid:
+  #     if self.lowest_sell <= order.get_price():
+  #       while True:
 
-    else:
-      book = sell_tree
-    global order_map
-    if order.get_price
+  #   else:
+  #     book = sell_tree
+  #   global order_map
+  #   if order.get_price
 
 def main():
-  global order_map
-  book = Book()
-  for line in sys.stdin:
-    #line = line.strip()
-    fields = line.split()
-    if fields[1] == 'A':
-      order = Order(fields[2], fields[0], fields[5], fields[4], fields[3])
-      book.add_order(order)
-      #print(order.get_shares())
+  a = Limit(10)
+  b = Limit(20)
+  c = Limit(0)
+  d = LimitTree()
+  d.insert(a)
+  d.insert(b)
+  d.insert(c)
+  d.insert(Limit(40))
+  d.insert(Limit(50))
+  d.insert(Limit(60))
+  d.insert(Limit(70))
+  d.insert(Limit(80))
+  print(abs(LimitTree.height(d, d.root)))
+  print(d.root.left_child.price)
+  print(d.root.right_child.price)
+  #print(d.root.right_child.right_child.right_child.right_child.price)
+  # global order_map
+  # book = Book()
+  # for line in sys.stdin:
+  #   #line = line.strip()
+  #   fields = line.split()
+  #   if fields[1] == 'A':
+  #     order = Order(fields[2], fields[0], fields[5], fields[4], fields[3])
+  #     book.add_order(order)
+  #     #print(order.get_shares())
     #print(line.strip())
 
 if __name__ == '__main__':
