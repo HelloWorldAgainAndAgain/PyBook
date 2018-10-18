@@ -91,6 +91,69 @@ http://www.mathcs.emory.edu/~cheung/Courses/323/Syllabus/Trees/AVL-insert.html#t
 import sys
 from timeit import default_timer as timer
 
+def validate(tree):
+  """Validates the tree is a valid AVL tree using a recursive helper function
+  
+  :param tree: LimitTree instance
+  :return: boolean, True if tree is a valid AVL tree, False otherwise
+  """
+  print('checking!')
+  return rvalidate(tree.root, None, None, None, None, 0, set())
+
+def height(node):
+    """
+    https://stackoverflow.com/questions/575772/the-best-way-to-calculate-the-height-in-a-binary-search-tree-balancing-an-avl
+    """
+    if node is None:
+      return 0
+    else:
+      return node.height
+
+def balance(node):
+  return abs(height(node.left_child) - height(node.right_child)) <= 1
+
+def rvalidate(node, min, max, parent, left, max_height, prices):
+  """Recursively checks if AVL tree rooted at this node is valid
+
+  :param node: Limit instance
+  :param min: min price of all Limit instances rooted at node
+  :param max: max price of all Limit instances rooted at node
+  :param parent: parent Limit instance to check pointers
+  :param left: True if node is the left child of parent, False if right child; None for initial call
+  :param max_height: height of the calling node, all children nodes must have a smaller height; 0 for initial call
+  :param prices: set of prices seen so far, if node's price is in set there is a duplicate Limit instance in the tree
+  :return: boolean, True if tree rooted at node is a valid AVL tree, False otherwise
+  """
+  if node is None:
+    return True
+  if node.price in prices:
+    return False
+  else:
+    prices.add(node.price)
+  if max_height > 0 and node.height >= max_height:
+    return False
+  if not balance(node):
+    return False
+  if not node.parent is parent:
+    return False
+  if min is not None and node.price < min:
+    return False
+  if max is not None and node.price > max:
+    return False
+  if node.parent is not parent:
+    return False
+  if left is not None:
+    if left:
+      if parent.left_child is not node or node.parent.left_child is not node:
+        return False
+    else:
+      if parent.right_child is not node or node.parent.right_child is not node:
+        return False
+  return rvalidate(node.left_child, min, node.price, node, True, node.height, prices) \
+         and rvalidate(node.right_child, node.price, max, node, False, node.height, prices)
+
+
+
 class Order:
   def __init__(self, uid, timestamp, shares, price, is_bid):
     self.uid = uid
