@@ -97,7 +97,6 @@ def validate(tree):
   :param tree: LimitTree instance
   :return: boolean, True if tree is a valid AVL tree, False otherwise
   """
-  print('checking!')
   return rvalidate(tree.root, None, None, None, None, 0, set())
 
 def height(node):
@@ -110,6 +109,11 @@ def height(node):
       return node.height
 
 def balance(node):
+  """Checks if balance factor is valid for a Limit instance
+
+  :param node: Limit instance
+  :return: boolean, True if balance factor is valid, False otherwise
+  """
   return abs(height(node.left_child) - height(node.right_child)) <= 1
 
 def rvalidate(node, min, max, parent, left, max_height, prices):
@@ -127,31 +131,36 @@ def rvalidate(node, min, max, parent, left, max_height, prices):
   if node is None:
     return True
   if node.price in prices:
+    print('Error with price')
     return False
   else:
     prices.add(node.price)
   if max_height > 0 and node.height >= max_height:
+    print('Error with height')
     return False
   if not balance(node):
-    return False
-  if not node.parent is parent:
-    return False
-  if min is not None and node.price < min:
-    return False
-  if max is not None and node.price > max:
+    print('Error with balance')
     return False
   if node.parent is not parent:
+    print('Error with parent pointer')
+    return False
+  if min is not None and node.price < min:
+    print('Error with min')
+    return False
+  if max is not None and node.price > max:
+    print('Error with max')
     return False
   if left is not None:
     if left:
       if parent.left_child is not node or node.parent.left_child is not node:
+        print('Error with left pointer')
         return False
     else:
       if parent.right_child is not node or node.parent.right_child is not node:
+        print('Error with right pointer')
         return False
   return rvalidate(node.left_child, min, node.price, node, True, node.height, prices) \
          and rvalidate(node.right_child, node.price, max, node, False, node.height, prices)
-
 
 
 class Order:
@@ -169,10 +178,13 @@ class Order:
     if shares_reduction >= self.shares:
       self.shares = 0
       self.cancel()
+      self.parent_limit.total_volume -= self.shares
     else:
       self.shares -= shares_reduction
+      self.parent_limit.total_volume -= shares_reduction
 
   def cancel(self):
+    self.parent_limit.size -= 1
     if self.prev_order:
       self.prev_order.next_order = self.next_order
       if self.next_order:
@@ -186,7 +198,13 @@ class Order:
       else:
         self.parent_limit.tail_order = None
 
+
 class Limit:
+  def __str__(self):
+    left = 'None' if self.left_child is None else str(self.left_child.price)
+    right = 'None' if self.right_child is None else str(self.right_child.price)
+    return left + '--' + str(self.price) + '--' + right
+
   def __init__(self, price):
     self.price = price
     self.size = 0
@@ -213,6 +231,7 @@ class Limit:
 class LimitTree:
   def __init__(self):
     self.root = None
+    self.size = 0
 
   def insert(self, limit):
     if not self.root:
@@ -321,7 +340,6 @@ class LimitTree:
     self.update_height(a)
     self.update_height(c)
 
-
   def update_height(self, node):
     """
     http://www.mathcs.emory.edu/~cheung/Courses/323/Syllabus/Trees/AVL-insert.html#tri-node
@@ -339,7 +357,51 @@ class LimitTree:
     else:
       return node.height
 
+  def successor(self, node):
+    """Returns the inorder successor of the node
 
+    :param node: Limit instance
+    :return: In-order successor of input if it exists or None otherwise
+    """
+    if node is None:
+      return None
+    if node.right_child is not None:
+      succ = node.right_child
+      while succ.left_child is not None:
+        succ = succ.left_child
+      return succ
+    else:
+      p = node.parent
+      while p is not None:
+        if node is not p.right_child:
+          break
+        node = p
+        p = p.parent
+      return p
+    
+  def predecessor(self, node):
+    """Returns the inorder predecessor of the node
+
+    :param node: Limit instance
+    :return: In-order predecessor of input if its exists or None otherwise
+    """
+    if node is None:
+      return None
+    if node.left_child is not None:
+      pred = node.left_child
+      while pred.right_child is not None:
+        pred = pred.right_child
+      return pred
+    else:
+      p = node.parent
+      while p is not None:
+        if node is not p.left_child:
+          break
+        node = p
+        p = p.parent
+      return p
+
+  
 class Book:
   buy_tree = LimitTree()
   sell_tree = LimitTree()
@@ -350,60 +412,202 @@ class Book:
   buy_levels = {}
   sell_levels = {}
 
-  def reduce_order(self, order_id, amount):
-    if order_id in self.buy_map:
-      self.buy_map[order_id].reduce(amount)
-      if self.buy_map[order_id].shares == 0:
-        del self.buy_map[order_id]
-    elif order_id in self.sell_map:
-      self.sell_map[order_id].reduce(amount)
-      if self.sell_map[order_id].shares == 0:
-        del self.sell_map[order_id]
+  def reduce_order(self, uid, shares):
+    """Reduce an order by the specified shares and remove order is necessary
 
+    :param uid: uid of the Order to modify
+    :param shares: amount of shares to reduce order
+    :return:
+    """
+    if uid in self.buy_map:
+      order = self.buy_map[uid]
+      limit = self.buy_levels[order.price]
+      order.reduce(shares)
+      if order.shares == 0:
+        del self.buy_map[uid]
+      if limit.size == 0:
+        self.buy_tree.size -= 1
+      if order.price == self.highest_buy:
+        self.update_highest_buy(limit)
+    elif uid in self.sell_map:
+      order = self.sell_map[uid]
+      limit = self.sell_levels[order.price]
+      order.reduce(shares)
+      if order.shares == 0:
+        del self.sell_map[uid]
+      if limit.size == 0:
+        self.sell_tree.size -= 1
+      if order.price == self.lowest_sell:
+        self.update_lowest_sell(limit)
+    else:
+      return
+    self.update_book()
+
+  def update_highest_buy(self, limit):
+    """Update the highest buy by finding the predecessor of the old highest
+
+    :param limit: Limit instance to start at
+    :return:    
+    """
+    if limit.size == 0:
+      #predecessor case
+      limit = self.buy_tree.predecessor(limit)
+      if limit is None:
+        #no predecessor
+        self.highest_buy = None
+      else: # have a predecessor but dont know if it has order or not
+        if limit.size == 0: #limit has no order but other limits in the tree might have orders
+          if self.buy_tree.size == 0: #we know no other limits have an order
+            self.highest_buy = None
+          else: #other limits have an order
+            while limit.size == 0:
+              limit = self.buy_tree.predecessor(limit)
+            #now our limit has a valid order
+            self.highest_buy = limit.price
+        else: #found valid pred
+          self.highest_buy = limit.price 
+
+  def update_lowest_sell(self, limit):
+    """Update the lowest sell by finding the successor of the old lowest
+
+    :param limit: Limit instance to start at
+    :return:
+    """
+    if limit.size == 0:
+      #successor case
+      limit = self.sell_tree.successor(limit)
+      if limit is None:
+        #no successor
+        self.lowest_sell = None
+      else: #have a successor, but dont know if it has orders or not
+        if limit.size == 0:#limit has no orders but other limits in the tree might have orders
+          if self.sell_tree.size == 0: #we know, no other limits have an order
+            self.lowest_sell = None
+          else: #other limits have an order
+            while limit.size == 0:
+              limit = self.sell_tree.successor(limit)
+            # now our limit has a valid order, and we've found the first valid successor
+            self.lowest_sell = limit.price
+        else: #limit has an order, we found the valid successor!
+          self.lowest_sell = limit.price
+
+  def execute_trade(self, sell, buy):
+    """Execute trade
+
+    :param sell: Sell Order instance
+    :param buy: Buy Order instance
+    :return:
+    """
+    if sell.shares > buy.shares:
+      diff = min(sell.shares, buy.shares)
+      buy.reduce(diff)
+      sell.reduce(diff)
+      del self.buy_map[buy.uid]
+      # new highest buy may be at the same limit or the predecessor
+      limit = buy.parent_limit
+      if limit.size == 0:
+        self.buy_tree.size -= 1
+      self.update_highest_buy(limit)        
+    elif sell.shares < buy.shares:
+      diff = min(sell.shares, buy.shares)
+      buy.reduce(diff)
+      sell.reduce(diff)
+      del self.sell_map[sell.uid]
+      #new lowest sell may be at the same limit or successor
+      limit = sell.parent_limit
+      if limit.size == 0:
+        self.sell_tree.size -= 1
+      self.update_lowest_sell(limit)
+    else: #equal
+      buy.reduce(buy.shares)
+      sell.reduce(sell.shares)
+      del self.buy_map[buy.uid]
+      del self.sell_map[sell.uid]
+      limit = buy.parent_limit
+      if limit.size == 0:
+        self.buy_tree.size -= 1
+      self.update_highest_buy(limit)
+      limit = sell.parent_limit
+      if limit.size == 0:
+        self.sell_tree.size -= 1
+      self.update_lowest_sell(limit)
+
+  def update_book(self):
+    """Update the order book, executing any trades that are now possible
+
+    :param:
+    :return:
+    """
+    while self.lowest_sell is not None and self.highest_buy is not None and self.lowest_sell <= self.highest_buy:
+      sell = self.sell_levels[self.lowest_sell].head_order
+      buy = self.buy_levels[self.highest_buy].head_order
+      self.execute_trade(sell, buy)
+      
   def add_order(self, order):
+    """Add an order to the correct tree at the correct Limit level
+
+    :param order: Order instance
+    :return:
+    """
     if order.is_bid:
       if order.price in self.buy_levels:
-        self.buy_levels[order.price].add(order)
+        limit = self.buy_levels[order.price]
+        if limit.size == 0:
+          self.buy_tree.size += 1
+        limit.add(order)
         self.buy_map[order.uid] = order
-        order.parent_limit = self.buy_levels[order.price]
+        order.parent_limit = limit
       else:
         limit = Limit(order.price)
         limit.add(order)
-        order.parent_limit = limit
         self.buy_map[order.uid] = order
         self.buy_tree.insert(limit)
+        self.buy_tree.size += 1
         self.buy_levels[order.price] = limit
+        order.parent_limit = self.buy_levels[order.price]
+      if self.highest_buy is None or order.price > self.highest_buy:
+        self.highest_buy = order.price
     else:
       if order.price in self.sell_levels:
-        self.sell_levels[order.price].add(order)
+        limit = self.sell_levels[order.price]
+        if limit.size == 0:
+          self.sell_tree.size += 1
+        limit.add(order)
         self.sell_map[order.uid] = order
         order.parent_limit = self.sell_levels[order.price]
       else:
         limit = Limit(order.price)
         limit.add(order)
-        order.parent_limit = limit
         self.sell_map[order.uid] = order
         self.sell_tree.insert(limit)
+        self.sell_tree.size += 1
         self.sell_levels[order.price] = limit
-
+        order.parent_limit = self.sell_levels[order.price]
+      if self.lowest_sell is None or order.price < self.lowest_sell:
+        self.lowest_sell = order.price
+    self.update_book()
 
 def main():
   start = timer()
   book = Book()
-  #sys.stdin = open('/dev/tty'); import pdb; pdb.set_trace()
+  count = 1
   for line in sys.stdin:
     fields = line.split()
-    #print(fields)
     if fields[1] == 'A':
       order = Order(fields[2], int(fields[0]), int(fields[5]), float(fields[4]), True if fields[3] == 'B' else False)
-      #uid, timestamp, shares, price, is_bid):
       book.add_order(order)
     elif fields[1] == 'R':
       book.reduce_order(fields[2], int(fields[3]))
-  print(book.sell_tree.root.height)
-  print(book.buy_tree.root.height)
+    count += 1
+
+    # the below asserts verify the correctness of the AVL tree after every transaction
+    #assert(validate(book.sell_tree))
+    #assert(validate(book.buy_tree))
   end = timer()
-  print(end-start)
+  total = end - start
+  print('Processed {} transactions in {:.2f} seconds, for an average of {} transactions/second'.format(count, total, int(count/total)))
 
 if __name__ == '__main__':
   main()
+
+
