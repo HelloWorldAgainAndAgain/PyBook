@@ -1,7 +1,7 @@
 # Limit Order Book
 A limit order book and matching engine written in Python. 
 ## Design
-Written as a proof-of-concept for achieveing great average-case performance, the bid and ask order books are implemented as sepearate AVL trees. Inspired by the HFT orderbook writeup by WK Selph [1], the limit levels are stored as nodes inside the trees, with each node itself being a doubly-linked list of orders, sorted chronologically.
+Written as a proof-of-concept for achieveing great average-case performance, the bid and ask order books are implemented as separate AVL trees. Inspired by the HFT orderbook writeup by WK Selph [1], the limit levels are stored as nodes inside the trees, with each node itself being a doubly-linked list of orders, sorted chronologically.
 ## Performance
 The design of the Order and Limit classes make assumptions about the format of transactions and are currently based off modified market data released by RGM Advisors [2]. Processing ~1.2 million transactions takes ~5 seconds on a Intel Core i5-6200U CPU @ 2.8GHz, for an average of ~240,000 transactions per second!
 ## Running
