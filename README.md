@@ -12,7 +12,7 @@ Sample transaction data is included in `data/pricer.in.gz`. From the root of the
 After processing the transactions, a summary is printed:
 ![output](https://my.mixtape.moe/adsztl.png)
 ## Debugging
-Included in `order_book.py` is a method `validate(tree)` that will recursively verify the correctness of a given AVL tree. Inside the main method, two lines `#assert(validate(book.sell_tree))` and `#assert(validate(book.buy_tree))` can be uncommented to verify the AVL tree after every transaction. Note, this incurs a significant performance cost, lowering the average processing speed to ~3000 transactions per second!
+Included in `order_book.py` is a method `validate(tree)` that will recursively verify the correctness (balance factor, parent/child pointers, height, limit levels) of a given AVL tree. Inside the main method, two lines `#assert(validate(book.sell_tree))` and `#assert(validate(book.buy_tree))` can be uncommented to verify the AVL tree after every transaction. Note, this incurs a significant performance cost, lowering the average processing speed to ~3000 transactions per second!
 ## References
 [1] https://web.archive.org/web/20110219163448/http://howtohft.wordpress.com/2011/02/15/how-to-build-a-fast-limit-order-book/
 
