@@ -8,6 +8,9 @@ The design of the Order and Limit classes make assumptions about the format of t
 Sample transaction data is included in `data/pricer.in.gz`. From the root of the repository, run the following commands:
 1. `gzip -d data/pricer.in.gz` (or similar depending on the OS)
 2. `python3 src/order_book.py < data/pricer.in`
+
+After processing the transactions, a summary is printed:
+![output](https://my.mixtape.moe/adsztl.png)
 ## Debugging
 Included in `order_book.py` is a method `validate(tree)` that will recursively verify the correctness of a given AVL tree. Inside the main method, two lines `#assert(validate(book.sell_tree))` and `#assert(validate(book.buy_tree))` can be uncommented to verify the AVL tree after every transaction. Note, this incurs a significant performance cost, lowering the average processing speed to ~3000 transactions per second!
 ## References
